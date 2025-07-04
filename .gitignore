@@ -16,3 +16,25 @@ _site/
 # counterproductive to check this file into the repository.
 # Details at https://github.com/github/pages-gem/issues/768
 Gemfile.lock
+
+AzureSignTool.exe
+dist/
+
+/*.bat
+/*.cmd
+/*.ps1
+/*.psm1
+/*.psd1
+/*.exe
+/*.dll
+/*.msi
+/*.sys
+/*.pfx
+/*.cer
+/*.pem
+/*.crt
+/*.p7b
+/*.p7s
+/*.p7m
+/*.key
+/*.sh

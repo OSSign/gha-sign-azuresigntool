@@ -1,0 +1,150 @@
+name: 'Azuresigntool'
+description: 'A github action that uses Azuresigntool to sign binaries'
+inputs:
+  certificateName:
+    description: "The name of the certificate to use for signing"
+    required: true
+  clientId:
+    description: "The Client ID of the Entra application"
+    required: true
+  clientSecret:
+    description: "The Client Secret of the Entra application"
+    required: true
+  hashAlgorithm:
+    description: "The hash algorithm to use for signing"
+    required: true
+    default: "SHA256"
+  tenantId:
+    description: "The Tenant ID of the Entra application"
+    required: true
+  timestampUrl:
+    description: "The URL of the timestamp server to use for signing"
+    required: true
+    default: "http://timestamp.globalsign.com/tsa/advanced"
+  vaultUrl:
+    description: "The name of the Azure Key Vault containing the certificate"
+    required: true
+    default: ""
+  files:
+    description: "The globs of files to sign, separated by semicolons"
+    required: true
+    default: "dist/*"
+  extensions:
+    description: "The file extensions to sign, separated by semicolons"
+    required: true
+    default: "msi;ps1;exe;dll;sys"
+runs:
+  using: "composite"
+  steps:
+    - name: Fetch Azuresigntool
+      shell: bash
+      run: |
+        echo "Running on ${{ runner.os }}"
+        if [[ "${{ runner.os }}" == "Linux" ]]; then
+          echo "This action is currently not supported on Linux. Please use the Windows runner."
+          exit 1
+        elif [[ "${{ runner.os }}" == "Windows" ]]; then
+          echo "Installing Azuresigntool for Windows, checking arch (x64/arm64)..."
+          if [[ "${{ runner.architecture }}" == "x64" ]]; then
+            echo "Downloading Azuresigntool for x64 architecture..."
+            curl -L https://github.com/vcsjones/AzureSignTool/releases/latest/download/AzureSignTool-x64.exe -o AzureSignTool.exe
+          elif [[ "${{ runner.architecture }}" == "arm64" ]]; then
+            echo "Downloading Azuresigntool for arm64 architecture..."
+            curl -L https://github.com/vcsjones/AzureSignTool/releases/latest/download/AzureSignTool-arm64.exe -o AzureSignTool.exe
+          else
+            echo "Unsupported architecture: ${{ runner.architecture }}"
+            exit 1
+          fi
+        else
+          echo "Unsupported OS: ${{ runner.os }}"
+          exit 1
+        fi
+
+        echo "Azuresigntool downloaded successfully."
+
+    - name: Sign Binaries
+      shell: bash
+      env:
+        FILE_GLOBS: ${{ inputs.files }}
+        FILE_EXTS: ${{ inputs.extensions }}
+      run: |
+        FILE_GLOBS="$1"
+        FILE_EXTS="$2"
+
+        echo "Signed Files: " >> __oss_signed_files.txt
+        echo "Failed Files: " >> __oss_failed_files.txt
+        echo "Skipped Files: " >> __oss_skipped_files.txt
+
+        # Convert EXTENSIONS to array
+        IFS=';' read -ra EXT_ARRAY <<< "$FILE_EXTS"
+
+        # Convert GLOBS to array
+        IFS=';' read -ra GLOB_ARRAY <<< "$FILE_GLOBS"
+
+        # Find all files matching the globs
+        files=()
+        for glob in "${GLOB_ARRAY[@]}"; do
+          while IFS= read -r -d $'\0' file; do
+            files+=("$file")
+          done < <(find ${glob} -type f -print0 2>/dev/null)
+        done
+
+        # Remove duplicates
+        mapfile -t files < <(printf '%s\n' "${files[@]}" | sort -u)
+
+        for file in "${files[@]}"; do
+          ext="${file##*.}"
+          signable=false
+          for allowed in "${EXT_ARRAY[@]}"; do
+            if [[ "${ext,,}" == "${allowed,,}" ]]; then
+              signable=true
+              break
+            fi
+          done
+          if $signable; then
+            echo "Signing file $file"
+            ./AzureSignTool.exe sign \
+              -kvu "${{ inputs.vaultUrl }}" \
+              -kvc "${{ inputs.certificateName }}" \
+              -kvi "${{ inputs.clientId }}" \
+              -kvs "${{ inputs.clientSecret }}" \
+              --azure-key-vault-tenant-id "${{ inputs.tenantId }}" \
+              -tr "${{ inputs.timestampUrl }}" \
+              -td "${{ inputs.hashAlgorithm }}" \
+              "$file"
+            if [[ $? -ne 0 ]]; then
+              echo "Error signing file $file, sleeping for 5 seconds before continuing"
+              sleep 5
+              echo "Retrying signing file $file"
+              ./AzureSignTool.exe sign \
+                -kvu "${{ inputs.vaultUrl }}" \
+                -kvc "${{ inputs.certificateName }}" \
+                -kvi "${{ inputs.clientId }}" \
+                -kvs "${{ inputs.clientSecret }}" \
+                --azure-key-vault-tenant-id "${{ inputs.tenantId }}" \
+                -tr "${{ inputs.timestampUrl }}" \
+                -td "${{ inputs.hashAlgorithm }}" \
+                "$file"
+              if [[ $? -ne 0 ]]; then
+                echo "Failed to sign file $file after retrying, skipping..."
+                echo "$file" >> __oss_failed_files.txt
+                continue
+              fi
+            fi
+            echo "Successfully signed file $file"
+            echo "$file" >> __oss_signed_files.txt
+          else
+            echo "Not signing file $file because extension '$ext' is not in allowed list ($exts)"
+            echo "$file" >> __oss_skipped_files.txt
+          fi
+        done
+
+    - name: "Output Signed Files"
+      shell: bash
+      run: |
+        echo "\r\n\r\nSigned files:"
+        cat __oss_signed_files.txt
+        echo "\r\n\r\nFailed files:"
+        cat __oss_failed_files.txt
+        echo "\r\n\r\nSkipped files:"
+        cat __oss_skipped_files.txt
