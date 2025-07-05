@@ -1,0 +1,38 @@
+on:
+    workflow_dispatch:
+jobs:
+    win:
+        runs-on: windows-latest
+        steps:
+            - name: Echo
+              run: echo "Running on ${{ runner.os }} with architecture ${{ runner.arch }}"
+
+    lin:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Echo
+              run: echo "Running on ${{ runner.os }} with architecture ${{ runner.arch }}"
+    
+    mac:
+        runs-on: macos-latest
+        steps:
+            - name: Echo
+              run: echo "Running on ${{ runner.os }} with architecture ${{ runner.arch }}"
+    
+    winarm:
+        runs-on: windows-arm64
+        steps:
+            - name: Echo
+              run: echo "Running on ${{ runner.os }} with architecture ${{ runner.arch }}"
+    
+    linuxarm:
+        runs-on: ubuntu-22.04-arm64
+        steps:
+            - name: Echo
+              run: echo "Running on ${{ runner.os }} with architecture ${{ runner.arch }}"
+    
+    macarm:
+        runs-on: macos-13-arm64
+        steps:
+            - name: Echo
+              run: echo "Running on ${{ runner.os }} with architecture ${{ runner.arch }}"

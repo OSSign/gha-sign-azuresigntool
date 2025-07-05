@@ -45,14 +45,14 @@ runs:
           exit 1
         elif [[ "${{ runner.os }}" == "Windows" ]]; then
           echo "Installing Azuresigntool for Windows, checking arch (x64/arm64)..."
-          if [[ "${{ runner.architecture }}" == "x64" ]]; then
+          if [[ "${{ runner.arch }}" == "x64" ]]; then
             echo "Downloading Azuresigntool for x64 architecture..."
             curl -L https://github.com/vcsjones/AzureSignTool/releases/latest/download/AzureSignTool-x64.exe -o AzureSignTool.exe
-          elif [[ "${{ runner.architecture }}" == "arm64" ]]; then
+          elif [[ "${{ runner.arch }}" == "arm64" ]]; then
             echo "Downloading Azuresigntool for arm64 architecture..."
             curl -L https://github.com/vcsjones/AzureSignTool/releases/latest/download/AzureSignTool-arm64.exe -o AzureSignTool.exe
           else
-            echo "Unsupported architecture: ${{ runner.architecture }}"
+            echo "Unsupported architecture: ${{ runner.arch }}"
             exit 1
           fi
         else
