@@ -68,9 +68,6 @@ runs:
         FILE_GLOBS: ${{ inputs.files }}
         FILE_EXTS: ${{ inputs.extensions }}
       run: |
-        FILE_GLOBS="$1"
-        FILE_EXTS="$2"
-
         echo "Signed Files: " >> __oss_signed_files.txt
         echo "Failed Files: " >> __oss_failed_files.txt
         echo "Skipped Files: " >> __oss_skipped_files.txt
