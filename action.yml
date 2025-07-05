@@ -44,11 +44,11 @@ runs:
           echo "This action is currently not supported on Linux. Please use the Windows runner."
           exit 1
         elif [[ "${{ runner.os }}" == "Windows" ]]; then
-          echo "Installing Azuresigntool for Windows, checking arch (x64/arm64)..."
-          if [[ "${{ runner.arch }}" == "x64" ]]; then
+          echo "Installing Azuresigntool for Windows, checking arch (X64/ARM64)..."
+          if [[ "${{ runner.arch }}" == "X64" ]]; then
             echo "Downloading Azuresigntool for x64 architecture..."
             curl -L https://github.com/vcsjones/AzureSignTool/releases/latest/download/AzureSignTool-x64.exe -o AzureSignTool.exe
-          elif [[ "${{ runner.arch }}" == "arm64" ]]; then
+          elif [[ "${{ runner.arch }}" == "ARM64" ]]; then
             echo "Downloading Azuresigntool for arm64 architecture..."
             curl -L https://github.com/vcsjones/AzureSignTool/releases/latest/download/AzureSignTool-arm64.exe -o AzureSignTool.exe
           else
